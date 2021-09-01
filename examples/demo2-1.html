@@ -8,6 +8,13 @@
 	</head>
 	<body>
 
+		<div style="position: fixed; top: 0; right: 0;">
+		<div onclick="handleRun()">思考 => 奔跑</div>
+		<div onclick="handleStand()">奔跑 => 站立</div>
+		<div onclick="handleThink()">站立 => 思考</div>
+		<div onclick="handleWalk()"> 思考 =>行走</div>
+		</div>
+
 		<script type="module">
 
 			import * as THREE from '../build/three.module.js';
@@ -19,7 +26,6 @@
 			import { OrbitControls } from './jsm/controls/OrbitControls.js';
 			import { GLTFLoader } from './jsm/loaders/GLTFLoader.js';
 
-			let stats, mixer, camera, scene, renderer, clock;
 
 			// 立方体
 			class Hypercube {
@@ -38,14 +44,14 @@
 
 					// 创建摄像机
 					this.camera = new THREE.PerspectiveCamera(
-						45, // 摄像机视锥体垂直视野角度
+						60, // 摄像机视锥体垂直视野角度
 						window.innerWidth / window.innerWidth, // 摄像机视锥体长宽比
 						1, // 摄像机视锥体近端面
-						1000 // 摄像机视锥体远端面
+						10000 // 摄像机视锥体远端面
 					);
 
 					// 设置摄像机位置
-					this.camera.position.set( 18, 6, 18 );
+					this.camera.position.set( - 5, 12, - 18 );
 
 				}
 
@@ -57,7 +63,10 @@
 					this.scene.background = new THREE.Color( 0xa0a0a0 );
 
 					// 远处的烟雾
-					this.scene.fog = new THREE.Fog( 0xa0a0a0, 70, 100 );
+					this.scene.fog = new THREE.Fog( 0xa0a0a0, 10, 32 );
+
+
+					// window.addEventListener( 'resize', this.onWindowResize.bind( this ) );
 
 				}
 
@@ -99,7 +108,7 @@
 					const ground = new THREE.Mesh( geometry, material );
 
 
-					ground.position.set( 0, - 5, 0 );
+					ground.position.set( 0, 0, 0 );
 					ground.rotation.x = - Math.PI / 2;
 					ground.receiveShadow = true;
 					this.scene.add( ground );
@@ -163,17 +172,19 @@
 
 					// 球形光照亮 天上光 & 地下光 & 光照强度
 					this.hemLight = new THREE.HemisphereLight( 0xffffff, 0x444444, 0.6 );
-					this.hemLight.position.set( 200, 200, 0 );
+					this.hemLight.position.set( 0, 20, 0 );
 					this.scene.add( this.hemLight );
 
 					// 平行光 颜色 & 强度
 					this.dirLight = new THREE.DirectionalLight( 0xffffff, 3 );
-					this.dirLight.position.set( 0, 20, 10 );
+					this.dirLight.position.set( - 3, 10, - 10 );
 					this.dirLight.castShadow = true;
-					this.dirLight.shadow.camera.top = 18;
+					this.dirLight.shadow.camera.top = 10;
 					this.dirLight.shadow.camera.bottom = - 10;
-					this.dirLight.shadow.camera.left = - 12;
-					this.dirLight.shadow.camera.right = 12;
+					this.dirLight.shadow.camera.left = - 10;
+					this.dirLight.shadow.camera.right = 10;
+					this.dirLight.shadow.camera.near = 0.1;
+					this.dirLight.shadow.camera.far = 40;
 					this.scene.add( this.dirLight );
 
 				}
@@ -191,11 +202,12 @@
 				initCarModel() {
 
 					// 加载动画 模型
-					const loader = new GLTFLoader().setPath( 'models/gltf/Car/' );
 
 					const that = this;
-					loader.load( 'scene.gltf', function ( carGltf ) {
+					new GLTFLoader().load( 'models/gltf/Soldier.glb', function ( carGltf ) {
 
+
+						console.info( 'carGltf', carGltf );
 
 						that.carGltf = carGltf;
 
@@ -212,9 +224,36 @@
 
 						// 动画播放器
 						that.mixer = new THREE.AnimationMixer( that.carGltf.scene );
+
+						that.actions = [
+							that.mixer.clipAction( that.carGltf.animations[ 0 ] ), // 思考
+							that.mixer.clipAction( that.carGltf.animations[ 1 ] ), // 跑步
+							that.mixer.clipAction( that.carGltf.animations[ 2 ] ), // 站立
+							that.mixer.clipAction( that.carGltf.animations[ 3 ] ), // 行走
+						];
+
 						that.mixer.clipAction( that.carGltf.animations[ 0 ] ).play();
 
 					} );
+
+				}
+
+				unPauseAllActions() {
+
+					this.actions.forEach( function ( action ) {
+
+						action.paused = false;
+
+					} );
+
+				}
+
+
+				onWindowResize() {
+
+					this.camera.aspect = window.innerWidth / window.innerHeight;
+					this.camera.updateProjectionMatrix();
+					this.renderer.setSize( window.innerWidth, window.innerHeight );
 
 				}
 
@@ -252,7 +291,7 @@
 
 			hypercube.initAxes();
 
-			hypercube.initGrids();
+			// hypercube.initGrids();
 
 			hypercube.initGrounds();
 
@@ -271,6 +310,48 @@
 			hypercube.initCarModel();
 
 			hypercube.animate();
+
+
+			window.handleRun = function () {
+
+				// hypercube.unPauseAllActions();
+
+				hypercube.mixer.stopAllAction();
+
+				hypercube.actions[ 1 ].play();
+
+				console.info( ' hypercube.actions', hypercube.actions );
+
+				// hypercube.actions[ 0 ].crossFadeTo( hypercube.actions[ 1 ], 1, true );
+
+			};
+
+			window.handleStand = function () {
+
+				hypercube.mixer.stopAllAction();
+
+				hypercube.actions[ 2 ].play();
+
+			};
+
+			window.handleWalk = function () {
+
+				hypercube.mixer.stopAllAction();
+
+				hypercube.actions[ 3 ].play();
+
+			};
+
+
+			window.handleThink = function () {
+
+				hypercube.mixer.stopAllAction();
+
+				hypercube.actions[ 0 ].play();
+
+			};
+
+
 
 
 

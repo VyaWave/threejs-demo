@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Multiple animated objects</title>
+		<meta charset="utf-8">
+		<meta content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" name="viewport">
+		<link type="text/css" rel="stylesheet" href="main.css">
+	</head>
+	<body>
+		<div id="container"></div>
+
+		<script type="module">
+
+			import * as THREE from '../build/three.module.js';
+
+			import { GLTFLoader } from './jsm/loaders/GLTFLoader.js';
+			import * as SkeletonUtils from './jsm/utils/SkeletonUtils.js';
+			import Stats from './jsm/libs/stats.module.js';
+			import { OrbitControls } from './jsm/controls/OrbitControls.js';
+
+			window.THREE = THREE;
+
+class SoliderController {
+
+	constructor() {
+
+		this.model = {};
+
+		this.init();
+
+	}
+
+	init() {
+
+		this.initRenderer();
+
+		this.initCamera();
+
+		this.initScene();
+
+		this.initLights();
+
+		this.initAxes();
+
+		this.initGround();
+
+		this.initStats();
+
+		this.initController();
+
+		// this.loadGltfModel();
+
+		this.initCarModel();
+
+
+		this.animate();
+
+
+	}
+
+	initController() {
+
+		// 参数是 相机对象 + 渲染器接点
+		this.controls = new OrbitControls( this.camera, this.renderer.domElement );
+		this.controls.enablePan = false;
+		this.controls.minDistance = 5;
+		this.controls.maxDistance = 50;
+
+	}
+
+	initAxes() {
+
+		const axes = new THREE.AxesHelper( 30 );
+		this.scene.add( axes );
+
+	}
+
+	initCamera() {
+
+		this.camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
+
+		this.camera.position.set( 3, 6, - 10 );
+
+		this.camera.lookAt( 0, 1, 0 );
+
+	}
+
+	initScene() {
+
+		this.scene = new THREE.Scene();
+		this.scene.background = new THREE.Color( 0xa0a0a0 );
+		this.scene.fog = new THREE.Fog( 0xa0a0a0, 10, 22 );
+
+		window.scene = this.scene;
+
+		this.clock = new THREE.Clock();
+
+	}
+
+	initLights() {
+
+		const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
+		hemiLight.position.set( 0, 20, 0 );
+		this.scene.add( hemiLight );
+
+		const dirLight = new THREE.DirectionalLight( 0xffffff );
+		dirLight.position.set( - 3, 10, - 10 );
+		dirLight.castShadow = true;
+		dirLight.shadow.camera.top = 10;
+		dirLight.shadow.camera.bottom = - 10;
+		dirLight.shadow.camera.left = - 10;
+		dirLight.shadow.camera.right = 10;
+		dirLight.shadow.camera.near = 0.1;
+		dirLight.shadow.camera.far = 40;
+		this.scene.add( dirLight );
+
+	}
+
+	initGround() {
+
+		const geometry = new THREE.PlaneGeometry( 40, 40 );
+
+		const material = new THREE.MeshPhongMaterial( { color: 0x999999, depthWrite: false } );
+
+		const groundMesh = new THREE.Mesh( geometry, material );
+
+		groundMesh.rotation.x = - Math.PI / 2;
+		groundMesh.receiveShadow = true;
+		this.scene.add( groundMesh );
+		window.addEventListener( 'resize', this.onWindowResize.bind( this ) );
+
+	}
+
+	initRenderer() {
+
+		this.container = document.getElementById( 'container' );
+		this.renderer = new THREE.WebGLRenderer( { antialias: true } );
+		this.renderer.setPixelRatio( window.devicePixelRatio );
+		this.renderer.setSize( window.innerWidth, window.innerHeight );
+		this.renderer.outputEncoding = THREE.sRGBEncoding;
+		this.renderer.shadowMap.enabled = true;
+		this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+		this.container.appendChild( this.renderer.domElement );
+
+	}
+
+	initCarModel() {
+
+		// 加载动画 模型
+		const loader = new GLTFLoader().setPath( 'models/gltf/Car/' );
+
+		const that = this;
+		loader.load( 'scene.gltf', function ( carGltf ) {
+
+
+			that.carGltf = carGltf;
+
+			that.carGltf.scene.scale.set( 2, 4, 2 );
+
+			that.scene.add( that.carGltf.scene );
+
+
+			that.carGltf.scene.traverse( function ( child ) {
+
+				if ( child.isSkinnedMesh ) child.castShadow = true;
+
+			} );
+
+			// 动画播放器
+			that.mixer = new THREE.AnimationMixer( that.carGltf.scene );
+			that.mixer.clipAction( that.carGltf.animations[ 0 ] ).play();
+
+		} );
+
+		}
+
+
+	loadGltfModel() {
+
+		const loader = new GLTFLoader();
+
+		const that = this;
+
+		loader.load( 'models/gltf/Soldier.glb', function ( gltf ) {
+
+	  	console.info( 'gltf', gltf );
+
+		  const scene = gltf.scene;
+
+	    that.model.animations = gltf.animations;
+
+	    gltf.scene.scale.set( 2, 2, 2 );
+	    gltf.scene.position.set( 0, 0, - 10 );
+
+	    that.model.scene = scene;
+
+	    that.scene.add( gltf.scene );
+
+
+
+		  // gltf.scene.traverse( function ( object ) {
+
+		  // if ( object.isMesh ) {
+
+			// 	  object.castShadow = true;
+
+		  // }
+
+		  // } );
+	    // that.clonedScene = SkeletonUtils.clone( scene );
+
+
+	    // if ( that.clonedScene ) {
+
+	    //   that.mixer = new THREE.AnimationMixer( scene );
+	    //   that.action = that.mixer.clipAction( that.model.animations[ 0 ] );
+	    //   that.action.play();
+
+	    // }
+
+	    // that.scene.add( that.clonedScene );
+
+
+		} );
+
+	}
+
+
+	// 浏览器帧数 调试显示器
+	initStats() {
+
+		this.stats = new Stats();
+		this.container.appendChild( this.stats.dom );
+
+	}
+
+	animate() {
+
+		requestAnimationFrame( this.animate.bind( this ) );
+
+		if ( this.mixer ) this.mixer.update( this.clock.getDelta() );
+
+		this.renderer.render( this.scene, this.camera );
+
+	}
+
+	onWindowResize() {
+
+		this.camera.aspect = window.innerWidth / window.innerHeight;
+		this.camera.updateProjectionMatrix();
+		this.renderer.setSize( window.innerWidth, window.innerHeight );
+
+	}
+
+
+
+
+}
+
+
+const SoliderConsole = new SoliderController();
+
+
+SoliderConsole.init();
+
+		</script>
+
+	</body>
+
+</html>
