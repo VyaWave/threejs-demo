@@ -32,11 +32,12 @@ class SoliderController {
 
 	init() {
 
+		this.initScene();
+
 		this.initRenderer();
 
 		this.initCamera();
 
-		this.initScene();
 
 		this.initLights();
 
@@ -242,6 +243,8 @@ class SoliderController {
 
 		this.renderer.render( this.scene, this.camera );
 
+		this.stats.update();
+
 	}
 
 	onWindowResize() {
@@ -251,9 +254,6 @@ class SoliderController {
 		this.renderer.setSize( window.innerWidth, window.innerHeight );
 
 	}
-
-
-
 
 }
 
