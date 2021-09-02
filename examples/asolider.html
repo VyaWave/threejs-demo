@@ -103,6 +103,9 @@
 					groundMesh.receiveShadow = true;
 					this.scene.add( groundMesh );
 
+					window.addEventListener( 'resize', this.onWindowResize.bind( this ) );
+
+
 				}
 
 				initCamera() {
@@ -155,7 +158,7 @@
 
 						this.scene.add( scene );
 
-						this.animations = gltf.animations
+						this.animations = gltf.animations;
 
 
 						scene.traverse( function ( child ) {
@@ -168,7 +171,7 @@
 						this.mixer = new THREE.AnimationMixer( scene );
 
 						// 0 思考 1 跑步 2 站立 3 行走
-						this.mixer.clipAction( gltf.animations[ 3 ] ).play();
+						this.mixer.clipAction( gltf.animations[ 2 ] ).play();
 
 					}.bind( this ) );
 
@@ -206,9 +209,17 @@
 
 					this.mixer.stopAllAction();
 
-					const action = this.mixer.clipAction( SuperSolider.animations[ actionIndex ] )
+					const action = this.mixer.clipAction( SuperSolider.animations[ actionIndex ] );
 
 					action.play();
+
+				}
+
+				onWindowResize() {
+
+					this.camera.aspect = window.innerWidth / window.innerHeight;
+					this.camera.updateProjectionMatrix();
+					this.renderer.setSize( window.innerWidth, window.innerHeight );
 
 				}
 
