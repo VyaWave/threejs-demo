@@ -61,7 +61,9 @@
 
 				initRenderer() {
 
-					this.renderer = new THREE.WebGLRenderer();
+					this.renderer = new THREE.WebGLRenderer( {
+						antialias: true,
+					} );
 
 					// 设置像素比
 					this.renderer.setPixelRatio( window.devicePixelRatio );
